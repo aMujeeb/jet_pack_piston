@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mujapps.piston.utils.LoggerUtils
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -45,7 +45,9 @@ import kotlin.math.roundToInt
 fun SwipeCard(
     onSwipeLeft: () -> Unit = {},
     onSwipeRight: () -> Unit = {},
-    swipeThreshold: Float = 100f,
+    onSwipeIntermediateLeft: () -> Unit = {},
+    onSwipeIntermediateRight: () -> Unit = {},
+    swipeThreshold: Float = 240f,
     sensitivityFactor: Float = 2f,
     content: @Composable () -> Unit
 ) {
@@ -53,6 +55,11 @@ fun SwipeCard(
     var dismissRight by remember { mutableStateOf(false) }
     var dismissLeft by remember { mutableStateOf(false) }
     val density = LocalDensity.current.density
+
+
+    //Intermediate States
+    var dismissIntermediateRight by remember { mutableStateOf(false) }
+    var dismissIntermediateLeft by remember { mutableStateOf(false) }
 
     LaunchedEffect(dismissRight) {
         if (dismissRight) {
@@ -70,6 +77,22 @@ fun SwipeCard(
         }
     }
 
+    LaunchedEffect(dismissIntermediateRight) {
+        if (dismissIntermediateRight) {
+            delay(500)
+            onSwipeIntermediateRight.invoke()
+            dismissIntermediateRight = false
+        }
+    }
+
+    LaunchedEffect(dismissIntermediateLeft) {
+        if (dismissIntermediateLeft) {
+            delay(500)
+            onSwipeIntermediateLeft.invoke()
+            dismissIntermediateLeft = false
+        }
+    }
+
     Box(modifier = Modifier
         .offset { IntOffset(offset.roundToInt(), 0) }
         .pointerInput(Unit) {
@@ -78,19 +101,37 @@ fun SwipeCard(
             }) { change, dragAmount ->
 
                 offset += (dragAmount / density) * sensitivityFactor
+
                 when {
+
                     offset > swipeThreshold -> {
                         dismissRight = true
+                        LoggerUtils.logMessage("Max ---> $offset --- $swipeThreshold")
                     }
 
                     offset < -swipeThreshold -> {
                         dismissLeft = true
                     }
 
+                    //Intermediate Scenarios**********
+                    offset > (swipeThreshold - 120) -> {
+                        dismissIntermediateRight = true
+                        LoggerUtils.logMessage("Min ---> $offset --- $swipeThreshold")
+                    }
+
+                    offset < (-swipeThreshold + 120) -> {
+                        dismissIntermediateLeft = true
+                    }
+
+                    //******************************
                     else -> {
                         dismissRight = false
                         dismissLeft = false
+
+                        dismissIntermediateRight = false
+                        dismissIntermediateLeft = false
                     }
+
                 }
                 if (change.positionChange() != Offset.Zero) change.consume()
             }
@@ -100,31 +141,5 @@ fun SwipeCard(
             rotationZ = animateFloatAsState(offset / 50, label = "").value
         )) {
         content()
-    }
-}
-
-@Composable
-fun ProfileScreen(profName: String, @DrawableRes drawableResId: Int, showLeftSwipe: MutableState<Boolean>, showRightSwipe: MutableState<Boolean>) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 10.dp
-        )
-    ) {
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top) {
-            Image(
-                painter = painterResource(id = drawableResId), contentDescription = profName,
-                Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(.8f)
-            )
-            Text(text = profName, style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            if (showLeftSwipe.value) {
-                Text(text = "Cat Left", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            }
-            if (showRightSwipe.value) {
-                Text(text = "Cat Right", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            }
-        }
     }
 }
