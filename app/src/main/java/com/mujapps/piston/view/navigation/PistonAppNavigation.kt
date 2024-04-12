@@ -1,10 +1,13 @@
 package com.mujapps.piston.view.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mujapps.piston.view.components.NotificationMessage
+import com.mujapps.piston.view.main.MainViewModel
 import com.mujapps.piston.view.screens.ChatListScreen
 import com.mujapps.piston.view.screens.LoginScreen
 import com.mujapps.piston.view.screens.ProfileScreen
@@ -16,9 +19,12 @@ import com.mujapps.piston.view.screens.SwipeScreen
 fun PistonAppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = DestinationScreen.Swipe.route) {
+    val vm: MainViewModel = hiltViewModel()
+    NotificationMessage(viewModel = vm)
+
+    NavHost(navController = navController, startDestination = DestinationScreen.SignUp.route) {
         composable(DestinationScreen.SignUp.route) {
-            SignUpScreen()
+            SignUpScreen(navController)
         }
 
         composable(DestinationScreen.Login.route) {
