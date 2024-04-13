@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.mujapps.piston.R
+import com.mujapps.piston.view.components.CheckedSignedIn
 import com.mujapps.piston.view.components.CommonProgressSpinner
 import com.mujapps.piston.view.main.MainViewModel
 import com.mujapps.piston.view.navigation.DestinationScreen
@@ -45,6 +47,18 @@ import com.mujapps.piston.view.navigation.DestinationScreen
 @Preview
 @Composable
 fun SignUpScreen(mNavController: NavController = rememberNavController(), mMainViewModel: MainViewModel = hiltViewModel()) {
+
+    val signedIn = mMainViewModel.mSignedInState.collectAsStateWithLifecycle().value
+    //CheckedSignedIn(signedIn, navController = mNavController)
+    
+    LaunchedEffect(key1 = signedIn) {
+        if(signedIn) {
+            mNavController.navigate(DestinationScreen.Swipe.route) {
+                popUpTo(0) //Remove all from backstack
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

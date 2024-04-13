@@ -22,13 +22,13 @@ fun PistonAppNavigation() {
     val vm: MainViewModel = hiltViewModel()
     NotificationMessage(viewModel = vm)
 
-    NavHost(navController = navController, startDestination = DestinationScreen.SignUp.route) {
+    NavHost(navController = navController, startDestination = DestinationScreen.Login.route) {
         composable(DestinationScreen.SignUp.route) {
             SignUpScreen(navController)
         }
 
         composable(DestinationScreen.Login.route) {
-            LoginScreen()
+            LoginScreen(navController)
         }
 
         composable(DestinationScreen.Profile.route) {

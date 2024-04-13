@@ -11,6 +11,10 @@ import androidx.navigation.NavController
 import com.mujapps.piston.view.components.BottomNavigationItem
 import com.mujapps.piston.view.components.BottomNavigationMenu
 
+enum class Gender {
+    CAT, DOG, ANY
+}
+
 @Composable
 fun ProfileScreen(navController: NavController) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {

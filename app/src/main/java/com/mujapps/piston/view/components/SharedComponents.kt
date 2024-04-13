@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.main.MainViewModel
+import com.mujapps.piston.view.navigation.DestinationScreen
 import kotlin.math.abs
 
 /*
@@ -200,5 +204,21 @@ fun NotificationMessage(viewModel: MainViewModel) {
 
     if (notificationMessage.isNullOrEmpty().not()) {
         Toast.makeText(context, notificationMessage, Toast.LENGTH_SHORT).show()
+    }
+}
+
+
+@Composable
+fun CheckedSignedIn(signedIn: Boolean, navController: NavController) {
+    val alreadyLoggedIn = remember {
+        mutableStateOf(false)
+    }
+
+    LoggerUtils.logMessage("Sign In State :$signedIn")
+   if(signedIn && !alreadyLoggedIn.value) {
+        alreadyLoggedIn.value = true
+        navController.navigate(DestinationScreen.Swipe.route){
+            //popUpTo(0) //Remove all from backstack
+        }
     }
 }
