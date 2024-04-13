@@ -80,6 +80,7 @@ dependencies {
     // Coroutine Lifecycle Scopes
     implementation (libs.androidx.lifecycle.viewmodel.ktx)
     implementation (libs.androidx.lifecycle.runtime.ktx)
+    implementation (libs.androidx.lifecycle.runtime.compose)
 
     //Dagger - Hilt
     implementation (libs.hilt.android)

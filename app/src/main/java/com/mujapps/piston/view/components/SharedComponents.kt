@@ -1,20 +1,31 @@
 package com.mujapps.piston.view.components
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.foundation.gestures.detectDragGestures
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.mujapps.piston.view.utils.ExperimentalSwipeableCardApi
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import com.mujapps.piston.utils.LoggerUtils
+import com.mujapps.piston.view.main.MainViewModel
+import com.mujapps.piston.view.navigation.DestinationScreen
 import kotlin.math.abs
 
 /*
@@ -168,4 +179,46 @@ private fun hasNotTravelledEnough(
 ): Boolean {
     return abs(offset.x) < state.maxWidth / 4 &&
             abs(offset.y) < state.maxHeight / 4
+}
+
+@Composable
+fun CommonProgressSpinner() {
+    Row(
+        modifier = Modifier
+            .alpha(0.5f)
+            .size(64.dp)
+            .padding(8.dp)
+            .background(Color.White)
+            .fillMaxSize()
+            .clickable(enabled = false) {}, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+fun NotificationMessage(viewModel: MainViewModel) {
+    val notificationState = viewModel.mPopUpNotificationState.collectAsStateWithLifecycle().value
+    val notificationMessage = notificationState.getContentOrNull()
+    val context = LocalContext.current
+
+    if (notificationMessage.isNullOrEmpty().not()) {
+        Toast.makeText(context, notificationMessage, Toast.LENGTH_SHORT).show()
+    }
+}
+
+
+@Composable
+fun CheckedSignedIn(signedIn: Boolean, navController: NavController) {
+    val alreadyLoggedIn = remember {
+        mutableStateOf(false)
+    }
+
+    LoggerUtils.logMessage("Sign In State :$signedIn")
+   if(signedIn && !alreadyLoggedIn.value) {
+        alreadyLoggedIn.value = true
+        navController.navigate(DestinationScreen.Swipe.route){
+            //popUpTo(0) //Remove all from backstack
+        }
+    }
 }
