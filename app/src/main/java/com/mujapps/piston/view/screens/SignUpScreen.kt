@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -146,7 +147,7 @@ fun SignUpScreen(mNavController: NavController = rememberNavController(), mMainV
                     )
                 }, colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.Black
-                )
+                ), visualTransformation = PasswordVisualTransformation()
             )
 
 

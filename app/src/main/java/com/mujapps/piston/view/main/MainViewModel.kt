@@ -56,6 +56,7 @@ class MainViewModel @Inject constructor(
                 mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         _inProgressState.value = false
+                        _signedInState.value = true
                         createOrUpdateProfile(username = userName)
                     } else {
                         handleException(task.exception, "SignUp Failed")
@@ -114,6 +115,7 @@ class MainViewModel @Inject constructor(
             mFireStore.collection(COLLECTION_USER).document(uid).get().addOnSuccessListener {
                 if (it.exists()) {
                     it.reference.update(userData.toMap()).addOnSuccessListener {
+                        _userDataState.value = userData //automatically update data on State upon retrieve
                         _inProgressState.value = false
                     }.addOnFailureListener { ex ->
                         handleException(ex, "Cannot Update User")

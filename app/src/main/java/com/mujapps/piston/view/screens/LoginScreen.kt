@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +48,7 @@ fun LoginScreen(mNavController: NavController = rememberNavController(), mMainVi
     val signedIn = mMainViewModel.mSignedInState.collectAsStateWithLifecycle().value
 
     LaunchedEffect(key1 = signedIn) {
-        if(signedIn) {
+        if (signedIn) {
             mNavController.navigate(DestinationScreen.Swipe.route) {
                 popUpTo(0) //Remove all from backstack
             }
@@ -121,7 +122,7 @@ fun LoginScreen(mNavController: NavController = rememberNavController(), mMainVi
                     )
                 }, colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.Black
-                )
+                ), visualTransformation = PasswordVisualTransformation()
             )
 
             Button(
