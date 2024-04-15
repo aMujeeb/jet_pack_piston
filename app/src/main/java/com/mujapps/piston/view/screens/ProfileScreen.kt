@@ -2,7 +2,6 @@ package com.mujapps.piston.view.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.RadioButton
@@ -33,18 +33,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.mujapps.piston.R
-import com.mujapps.piston.data.UserData
 import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.components.BottomNavigationItem
 import com.mujapps.piston.view.components.BottomNavigationMenu
 import com.mujapps.piston.view.components.CommonDivider
-import com.mujapps.piston.view.components.CommonImage
 import com.mujapps.piston.view.components.CommonProgressSpinner
 import com.mujapps.piston.view.main.MainViewModel
 import com.mujapps.piston.view.navigation.DestinationScreen
@@ -65,7 +64,7 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
         //All Components
         val mUserData = mMainViewModel.mUserDataState.collectAsStateWithLifecycle().value
         val mGender = if (mUserData?.gender.isNullOrEmpty()) "CAT" else mUserData?.gender!!.uppercase()
-        val mGenderPreference = if (mUserData?.genderPreference.isNullOrEmpty()) "CAT" else mUserData.genderPreference!!.uppercase()
+        val mGenderPreference = if (mUserData?.genderPreference.isNullOrEmpty()) "CAT" else mUserData?.genderPreference!!.uppercase()
 
         LoggerUtils.logMessage(mUserData?.userName ?: "uihh")
 
@@ -188,6 +187,7 @@ fun ProfileContent(
             Text(text = "Name", modifier = Modifier.width(100.dp))
             TextField(
                 value = mName,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 onValueChange = onNameChanged,
                 modifier = Modifier.background(Color.Transparent),
                 colors = TextFieldDefaults.colors(
@@ -204,6 +204,7 @@ fun ProfileContent(
             Text(text = "User Name", modifier = Modifier.width(100.dp))
             TextField(
                 value = mUserName,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 onValueChange = onUserNameChanged,
                 modifier = Modifier.background(Color.Transparent),
                 colors = TextFieldDefaults.colors(
@@ -220,6 +221,7 @@ fun ProfileContent(
             Text(text = "Bio", modifier = Modifier.width(100.dp))
             TextField(
                 value = mBio,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 onValueChange = onBioChanged,
                 modifier = Modifier
                     .background(Color.Transparent)

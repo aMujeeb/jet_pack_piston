@@ -106,7 +106,6 @@ fun SwipeCard(
 
                     offset > swipeThreshold -> {
                         dismissRight = true
-                        LoggerUtils.logMessage("Max ---> $offset --- $swipeThreshold")
                     }
 
                     offset < -swipeThreshold -> {
@@ -116,7 +115,6 @@ fun SwipeCard(
                     //Intermediate Scenarios**********
                     offset > (swipeThreshold - 120) -> {
                         dismissIntermediateRight = true
-                        LoggerUtils.logMessage("Min ---> $offset --- $swipeThreshold")
                     }
 
                     offset < (-swipeThreshold + 120) -> {

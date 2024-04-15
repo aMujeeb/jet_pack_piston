@@ -5,10 +5,15 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
+import com.mujapps.piston.data.ChatData
+import com.mujapps.piston.data.ChatUser
 import com.mujapps.piston.data.UserData
+import com.mujapps.piston.utils.COLLECTION_CHAT
 import com.mujapps.piston.utils.COLLECTION_USER
 import com.mujapps.piston.utils.Event
 import com.mujapps.piston.utils.LoggerUtils
@@ -36,6 +41,14 @@ class MainViewModel @Inject constructor(
 
     private var _userDataState = MutableStateFlow<UserData?>(UserData())
     val mUserDataState: MutableStateFlow<UserData?> = _userDataState
+
+    //val mMatchProfiles = mutableStateOf<List<UserData>>(listOf())
+
+    private val _matchProfilesState = MutableStateFlow<ArrayList<UserData>?>(arrayListOf())
+    val mMatchProfilesState : MutableStateFlow<ArrayList<UserData>?> = _matchProfilesState
+
+    private var _inProgressProfiles = MutableStateFlow(false)
+    val mInProgressProfiles: MutableStateFlow<Boolean> = _inProgressProfiles
 
     init {
         val currentUser = mAuth.currentUser
@@ -119,6 +132,9 @@ class MainViewModel @Inject constructor(
                     it.reference.update(userData.toMap()).addOnSuccessListener {
                         _userDataState.value = userData //automatically update data on State upon retrieve
                         _inProgressState.value = false
+
+                        //Refresh cards
+                        populateCards()
                     }.addOnFailureListener { ex ->
                         handleException(ex, "Cannot Update User")
                     }
@@ -145,6 +161,8 @@ class MainViewModel @Inject constructor(
                 if (user != null) {
                     _userDataState.value = user
                     _inProgressState.value = false
+                    //Refresh cards
+                    populateCards()
                 }
             }
         }
@@ -193,4 +211,115 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private fun populateCards() {
+        _inProgressProfiles.value = true
+
+        val gender = if (mUserDataState.value?.gender.isNullOrEmpty()) "ANY"
+        else mUserDataState.value?.gender!!.uppercase()
+
+        val genderPref = if (mUserDataState.value?.genderPreference.isNullOrEmpty()) "ANY"
+        else mUserDataState.value?.genderPreference!!.uppercase()
+
+        val cardsQuery = when (Gender.valueOf(genderPref)) {
+            Gender.CAT -> mFireStore.collection(COLLECTION_USER).whereEqualTo("gender", Gender.CAT)
+            Gender.DOG -> mFireStore.collection(COLLECTION_USER).whereEqualTo("gender", Gender.DOG)
+            Gender.ANY -> mFireStore.collection(COLLECTION_USER)
+        }
+
+        val userGender = Gender.valueOf(gender) //Current users Gender
+
+        //Improve query
+        cardsQuery.where(
+            Filter.and(
+                Filter.notEqualTo("userId", mUserDataState.value?.userId),
+                /*Filter.or(
+                    Filter.equalTo("genderPreference", userGender),
+                    Filter.equalTo("genderPreference", Gender.ANY)
+                )*/
+            )
+        ).addSnapshotListener { value, error ->
+            if (error != null) {
+                LoggerUtils.logMessage("Query Error SnapShot: $error")
+                handleException(error)
+            }
+            LoggerUtils.logMessage("Query Value SnapShot: ${value?.documents?.size ?: 0}")
+
+            if (value != null) {
+                val potentials = mutableListOf<UserData>()
+                value.documents.forEach {
+                    it.toObject<UserData>()?.let { potential ->
+                        var showUser = true
+                        if (mUserDataState.value?.swipeLeft?.contains(potential.userId) == true
+                            || mUserDataState.value?.swipeRight?.contains(potential.userId) == true
+                            || mUserDataState.value?.matches?.contains(potential.userId) == true
+                        ) {
+                            showUser = false
+                        }
+
+                        if (showUser) potentials.add(potential)
+
+                        LoggerUtils.logMessage("Potential Size: ${potentials.size}")
+                    }
+                }
+
+                _matchProfilesState.value = ArrayList(potentials)
+                _inProgressProfiles.value = false
+            }
+        }
+    }
+
+    fun onDisLike(selectedUser: UserData) {
+        mFireStore.collection(COLLECTION_USER).document(mUserDataState.value?.userId ?: "")
+            .update("swipesLeft", FieldValue.arrayUnion(selectedUser.userId))
+    }
+
+    fun onLike(selectedUser: UserData) {
+        //First Check is a Match
+        val reciprocalMatch = selectedUser.swipeRight.contains(mUserDataState.value?.userId)
+        if (!reciprocalMatch) {
+            mFireStore.collection(COLLECTION_USER).document(mUserDataState.value?.userId ?: "")
+                .update("swipesRight", FieldValue.arrayUnion(selectedUser.userId))
+        } else {
+            _popUpNotificationState.value = Event("Match!")
+
+            mFireStore.collection(COLLECTION_USER).document(selectedUser.userId ?: "")
+                .update("swipesRight", FieldValue.arrayRemove(mUserDataState.value?.userId ?: ""))
+
+            mFireStore.collection(COLLECTION_USER).document(selectedUser.userId ?: "")
+                .update("matches", FieldValue.arrayUnion(mUserDataState.value?.userId ?: ""))
+
+            mFireStore.collection(COLLECTION_USER).document(mUserDataState.value?.userId ?: "")
+                .update("matches", FieldValue.arrayUnion(selectedUser.userId ?: ""))
+
+            //Creating a Chat channel
+
+            val chatKey = mFireStore.collection(COLLECTION_CHAT).document().id
+            val chatData = ChatData(
+                chatKey,
+                ChatUser(
+                    mUserDataState.value?.userId,
+                    if (mUserDataState.value?.name.isNullOrEmpty()) mUserDataState.value?.userName else mUserDataState.value?.name,
+                    mUserDataState.value?.imageUrl
+                ),
+                ChatUser(
+                    selectedUser.userId,
+                    if (selectedUser.name.isNullOrEmpty()) selectedUser.userName else selectedUser.name,
+                    selectedUser.imageUrl
+                )
+            )
+            mFireStore.collection(COLLECTION_CHAT).document(chatKey).set(chatData)
+        }
+    }
+
+    fun onSwiped(profId : String?) {
+        LoggerUtils.logMessage("Potential Swipe")
+        val profiles = _matchProfilesState.value
+        if(profiles.isNullOrEmpty().not() && profId.isNullOrEmpty().not()) {
+            LoggerUtils.logMessage("Potential Remove If")
+            val  temp = profiles?.filter {
+                it.userId != profId
+            }
+            _matchProfilesState.value = ArrayList(temp)
+        }
+    }
 }
