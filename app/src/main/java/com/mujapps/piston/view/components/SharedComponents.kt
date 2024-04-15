@@ -1,5 +1,6 @@
 package com.mujapps.piston.view.components
 
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
@@ -18,12 +20,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.load
+import com.mujapps.piston.R
 import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.main.MainViewModel
 import com.mujapps.piston.view.navigation.DestinationScreen
@@ -226,7 +232,21 @@ fun CheckedSignedIn(signedIn: Boolean, navController: NavController) {
 
 @Composable
 fun CommonDivider() {
-    Divider(color = Color.LightGray, thickness = 1.dp, modifier = Modifier
-        .alpha(0.3f)
-        .padding(top = 8.dp, bottom = 8.dp))
+    Divider(
+        color = Color.LightGray, thickness = 1.dp, modifier = Modifier
+            .alpha(0.3f)
+            .padding(top = 8.dp, bottom = 8.dp)
+    )
 }
+
+@Composable
+fun CommonImage(
+    imageView: ImageView,
+    data: String
+) {
+    imageView.load(data) {
+        crossfade(true)
+        placeholder(R.drawable.baseline_downloading)
+    }
+}
+

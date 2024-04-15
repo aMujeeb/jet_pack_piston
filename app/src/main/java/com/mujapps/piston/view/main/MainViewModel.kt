@@ -1,5 +1,6 @@
 package com.mujapps.piston.view.main
 
+import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,7 @@ import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.screens.Gender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -163,4 +165,32 @@ class MainViewModel @Inject constructor(
         _userDataState.value = null
         _popUpNotificationState.value = Event("Logged Out")
     }
+
+    fun updateProfileData(name: String, userName: String, bio: String, gender: Gender, genderPreference: Gender) {
+        createOrUpdateProfile(name = name, username = userName, bio = bio, gender = gender, genderPreference = genderPreference)
+    }
+
+    private fun uploadImage(uri: Uri, onSuccess: (Uri) -> Unit) {
+        _inProgressState.value = true
+
+        val storageRef = mFireStorage.reference
+        val uuid = UUID.randomUUID()
+
+        val imageRef = storageRef.child("images/$uuid")
+        val uploadTask = imageRef.putFile(uri)
+
+        uploadTask.addOnSuccessListener {
+            val result = it.metadata?.reference?.downloadUrl
+            result?.addOnSuccessListener(onSuccess)
+        }.addOnFailureListener { error ->
+            handleException(error)
+        }
+    }
+
+    fun uploadProfilePic(uri: Uri) {
+        uploadImage(uri) {
+            createOrUpdateProfile(imageUrl = it.toString())
+        }
+    }
+
 }

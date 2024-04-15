@@ -1,16 +1,25 @@
 package com.mujapps.piston.view.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -23,14 +32,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.mujapps.piston.R
 import com.mujapps.piston.data.UserData
+import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.components.BottomNavigationItem
 import com.mujapps.piston.view.components.BottomNavigationMenu
 import com.mujapps.piston.view.components.CommonDivider
+import com.mujapps.piston.view.components.CommonImage
 import com.mujapps.piston.view.components.CommonProgressSpinner
 import com.mujapps.piston.view.main.MainViewModel
 import com.mujapps.piston.view.navigation.DestinationScreen
@@ -50,6 +64,10 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
     } else {
         //All Components
         val mUserData = mMainViewModel.mUserDataState.collectAsStateWithLifecycle().value
+        val mGender = if (mUserData?.gender.isNullOrEmpty()) "CAT" else mUserData?.gender!!.uppercase()
+        val mGenderPreference = if (mUserData?.genderPreference.isNullOrEmpty()) "CAT" else mUserData.genderPreference!!.uppercase()
+
+        LoggerUtils.logMessage(mUserData?.userName ?: "uihh")
 
         var name by rememberSaveable {
             mutableStateOf(mUserData?.name ?: "")
@@ -63,12 +81,16 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
             mutableStateOf(mUserData?.bio ?: "")
         }
 
+        var profileImage by rememberSaveable {
+            mutableStateOf(mUserData?.imageUrl ?: "")
+        }
+
         var gender by rememberSaveable {
-            mutableStateOf(Gender.valueOf(mUserData?.gender?.uppercase() ?: "CAT"))
+            mutableStateOf(Gender.valueOf(mGender))
         }
 
         var genderPreference by rememberSaveable {
-            mutableStateOf(Gender.valueOf(mUserData?.genderPreference?.uppercase() ?: "DOG"))
+            mutableStateOf(Gender.valueOf(mGenderPreference))
         }
 
         val scrollState = rememberScrollState()
@@ -80,7 +102,12 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
                     .verticalScroll(scrollState)
                     .padding(8.dp),
                 mMainViewModel = mMainViewModel,
-                mUserData = mUserData,
+                mName = name,
+                mUserName = userName,
+                mBio = bio,
+                mProfileImage = profileImage,
+                mGender = gender,
+                mGenderPref = genderPreference,
                 onNameChanged = {
                     name = it
                 },
@@ -97,12 +124,13 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
                     genderPreference = it
                 },
                 onSaveClicked = {
-                    //Trigger View Model
+                    mMainViewModel.updateProfileData(name, userName, bio, gender, genderPreference)
                 },
                 onBackPress = {
                     navigateTo(mNavController, DestinationScreen.Swipe.route)
                 },
                 onLogOut = {
+                    mMainViewModel.onLogOut()
                     navigateTo(mNavController, DestinationScreen.Login.route)
                 }
             )
@@ -115,7 +143,12 @@ fun ProfileScreen(mNavController: NavController, mMainViewModel: MainViewModel =
 fun ProfileContent(
     mModifier: Modifier = Modifier,
     mMainViewModel: MainViewModel,
-    mUserData: UserData?,
+    mName: String,
+    mUserName: String,
+    mBio: String,
+    mProfileImage: String,
+    mGender: Gender,
+    mGenderPref: Gender,
     onNameChanged: (String) -> Unit,
     onUserNameChanged: (String) -> Unit,
     onBioChanged: (String) -> Unit,
@@ -143,7 +176,7 @@ fun ProfileContent(
 
         CommonDivider()
 
-        ProfileImage()
+        ProfileImage(mProfileImage, mMainViewModel)
 
         CommonDivider()
 
@@ -154,7 +187,7 @@ fun ProfileContent(
         ) {
             Text(text = "Name", modifier = Modifier.width(100.dp))
             TextField(
-                value = mUserData?.name ?: "",
+                value = mName,
                 onValueChange = onNameChanged,
                 modifier = Modifier.background(Color.Transparent),
                 colors = TextFieldDefaults.colors(
@@ -170,7 +203,7 @@ fun ProfileContent(
         ) {
             Text(text = "User Name", modifier = Modifier.width(100.dp))
             TextField(
-                value = mUserData?.userName ?: "",
+                value = mUserName,
                 onValueChange = onUserNameChanged,
                 modifier = Modifier.background(Color.Transparent),
                 colors = TextFieldDefaults.colors(
@@ -186,7 +219,7 @@ fun ProfileContent(
         ) {
             Text(text = "Bio", modifier = Modifier.width(100.dp))
             TextField(
-                value = mUserData?.bio ?: "",
+                value = mBio,
                 onValueChange = onBioChanged,
                 modifier = Modifier
                     .background(Color.Transparent)
@@ -211,14 +244,14 @@ fun ProfileContent(
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = Gender.valueOf(mUserData?.gender ?: "CAT") == Gender.CAT, onClick = { onGenderChanged(Gender.CAT) })
+                    RadioButton(selected = mGender == Gender.CAT, onClick = { onGenderChanged(Gender.CAT) })
                     Text(text = "Cat", modifier = Modifier
                         .padding(4.dp)
                         .clickable { onGenderChanged(Gender.CAT) })
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = Gender.valueOf(mUserData?.gender ?: "DOG") == Gender.DOG, onClick = { onGenderChanged(Gender.DOG) })
+                    RadioButton(selected = mGenderPref == Gender.DOG, onClick = { onGenderChanged(Gender.DOG) })
                     Text(text = "Dog", modifier = Modifier
                         .padding(4.dp)
                         .clickable { onGenderChanged(Gender.DOG) })
@@ -242,7 +275,7 @@ fun ProfileContent(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = Gender.valueOf(mUserData?.gender ?: "CAT") == Gender.CAT,
+                        selected = mGenderPref == Gender.CAT,
                         onClick = { onGenderPreferenceChanged(Gender.CAT) })
                     Text(text = "Cats", modifier = Modifier
                         .padding(4.dp)
@@ -251,7 +284,7 @@ fun ProfileContent(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = Gender.valueOf(mUserData?.gender ?: "DOG") == Gender.DOG,
+                        selected = mGenderPref == Gender.DOG,
                         onClick = { onGenderPreferenceChanged(Gender.DOG) })
                     Text(text = "Dogs", modifier = Modifier
                         .padding(4.dp)
@@ -260,7 +293,7 @@ fun ProfileContent(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = Gender.valueOf(mUserData?.gender ?: "ANY") == Gender.ANY,
+                        selected = mGenderPref == Gender.ANY,
                         onClick = { onGenderPreferenceChanged(Gender.ANY) })
                     Text(text = "Any", modifier = Modifier
                         .padding(4.dp)
@@ -286,6 +319,38 @@ fun ProfileContent(
 }
 
 @Composable
-fun ProfileImage() {
+fun ProfileImage(imageUrl: String, viewModel: MainViewModel) {
 
+    val contentLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                viewModel.uploadProfilePic(uri)
+            }
+        }
+
+    Box(modifier = Modifier.height(IntrinsicSize.Min)) {
+        Column(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth()
+                .clickable {
+                    contentLauncher.launch("image/*")
+                }, horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Card(
+                shape = CircleShape, modifier = Modifier
+                    .padding(8.dp)
+                    .size(100.dp)
+            ) {
+                AsyncImage(
+                    modifier = Modifier.fillMaxSize(),
+                    model = imageUrl,
+                    contentDescription = "Profile pic",
+                    alignment = Alignment.Center,
+                    placeholder = painterResource(id = R.drawable.baseline_downloading)
+                )
+            }
+            Text(text = "Change Profile Pic")
+        }
+    }
 }
