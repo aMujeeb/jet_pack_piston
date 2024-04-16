@@ -47,7 +47,8 @@ fun SwipeCard(
     onSwipeRight: () -> Unit = {},
     onSwipeIntermediateLeft: () -> Unit = {},
     onSwipeIntermediateRight: () -> Unit = {},
-    swipeThreshold: Float = 320f,
+    onSwipeCancelled: () -> Unit = {},
+    swipeThreshold: Float = 340f,
     sensitivityFactor: Float = 2f,
     content: @Composable () -> Unit
 ) {
@@ -60,6 +61,7 @@ fun SwipeCard(
     //Intermediate States
     var dismissIntermediateRight by remember { mutableStateOf(false) }
     var dismissIntermediateLeft by remember { mutableStateOf(false) }
+    var dismissIntermediateAll by remember { mutableStateOf(false) }
 
     LaunchedEffect(dismissRight) {
         if (dismissRight) {
@@ -79,7 +81,6 @@ fun SwipeCard(
 
     LaunchedEffect(dismissIntermediateRight) {
         if (dismissIntermediateRight) {
-            delay(50)
             onSwipeIntermediateRight.invoke()
             dismissIntermediateRight = false
         }
@@ -87,9 +88,15 @@ fun SwipeCard(
 
     LaunchedEffect(dismissIntermediateLeft) {
         if (dismissIntermediateLeft) {
-            delay(50)
             onSwipeIntermediateLeft.invoke()
             dismissIntermediateLeft = false
+        }
+    }
+
+    LaunchedEffect(dismissIntermediateAll) {
+        if (dismissIntermediateAll) {
+            onSwipeCancelled.invoke()
+            dismissIntermediateAll = false
         }
     }
 
@@ -98,6 +105,7 @@ fun SwipeCard(
         .pointerInput(Unit) {
             detectHorizontalDragGestures(onDragEnd = {
                 offset = 0f
+                dismissIntermediateAll = true
             }) { change, dragAmount ->
 
                 offset += (dragAmount / density) * sensitivityFactor
@@ -113,11 +121,11 @@ fun SwipeCard(
                     }
 
                     //Intermediate Scenarios**********
-                    offset > (swipeThreshold - 200) -> {
+                    offset > (swipeThreshold - 160) -> {
                         dismissIntermediateRight = true
                     }
 
-                    offset < (-swipeThreshold + 200) -> {
+                    offset < (-swipeThreshold + 160) -> {
                         dismissIntermediateLeft = true
                     }
 
@@ -125,11 +133,9 @@ fun SwipeCard(
                     else -> {
                         dismissRight = false
                         dismissLeft = false
-
-                        dismissIntermediateRight = false
                         dismissIntermediateLeft = false
+                        dismissIntermediateRight = false
                     }
-
                 }
                 if (change.positionChange() != Offset.Zero) change.consume()
             }

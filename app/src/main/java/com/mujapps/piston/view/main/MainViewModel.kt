@@ -43,9 +43,6 @@ class MainViewModel @Inject constructor(
     private var _userDataState = MutableStateFlow<UserData?>(UserData())
     val mUserDataState: MutableStateFlow<UserData?> = _userDataState
 
-    private val _matchProfilesState = MutableStateFlow<ArrayList<UserData>?>(arrayListOf())
-    val mMatchProfilesState: MutableStateFlow<ArrayList<UserData>?> = _matchProfilesState
-
     private val _matchSwipeScreenState = MutableStateFlow<SwipeScreen?>(SwipeScreen())
     val mMatchSwipeScreenState: MutableStateFlow<SwipeScreen?> = _matchSwipeScreenState
 
@@ -264,7 +261,6 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
-                _matchProfilesState.value = ArrayList(potentials)
                 _matchSwipeScreenState.update {
                     it?.copy(mData = ArrayList(potentials), resetUI = true, totalCount = potentials.size, nowCount = 1)
                 }
@@ -317,17 +313,18 @@ class MainViewModel @Inject constructor(
     }
 
     fun onSwiped(profId: String?) {
-        LoggerUtils.logMessage("Potential Swipe")
-        val profiles = _matchProfilesState.value
-        if (profiles.isNullOrEmpty().not() && profId.isNullOrEmpty().not()) {
-            LoggerUtils.logMessage("Potential Remove If")
-            val temp = profiles?.filter {
+        val profiles = _matchSwipeScreenState.value?.mData ?: arrayListOf()
+        if (profiles.isEmpty().not() && profId.isNullOrEmpty().not()) {
+            val temp = profiles.filter {
                 it.userId != profId
             }
-            _matchProfilesState.value = temp?.let { ArrayList(it) }
 
-            _matchSwipeScreenState.update {
-                it?.copy(mData = temp?.let { it1 -> ArrayList(it1) } ?: arrayListOf(), resetUI = true, nowCount = it.nowCount++)
+            _matchSwipeScreenState.update { swipeScreen ->
+                swipeScreen?.copy(
+                    mData = ArrayList(temp),
+                    resetUI = true,
+                    nowCount = if (temp.isNotEmpty()) (swipeScreen.nowCount + 1) else swipeScreen.nowCount
+                )
             }
         }
     }

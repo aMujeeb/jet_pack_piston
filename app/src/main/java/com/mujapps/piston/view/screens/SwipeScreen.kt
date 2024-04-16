@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -150,11 +151,9 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
             CommonProgressSpinner()
         }
     } else {
-        val profiles = mMainViewModel.mMatchProfilesState.collectAsStateWithLifecycle().value
-
         val mMatchSwipeScreenState = mMainViewModel.mMatchSwipeScreenState.collectAsStateWithLifecycle().value
 
-        if(mMatchSwipeScreenState?.resetUI == true) {
+        if (mMatchSwipeScreenState?.resetUI == true) {
             showLeftSwipe.value = false
             showRightSwipe.value = false
         }
@@ -166,13 +165,24 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                 .background(Brush.verticalGradient(listOf(Color(0xfff68084), Color(0xffa6c0fe))))
         ) {
             //Spacer
-            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${mMatchSwipeScreenState?.nowCount}/${mMatchSwipeScreenState?.totalCount}",
+                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                )
+            }
 
             //Cards
 
             Box(
                 modifier = Modifier
-                    .padding(24.dp)
+                    .padding(16.dp)
                     .fillMaxHeight(0.8f)
             ) {
                 Column(
@@ -180,7 +190,7 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "No Profiles Available")
+                    Text(text = "No Profiles Available", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp))
                 }
 
                 mMatchSwipeScreenState?.mData?.forEach { matchProfile ->
@@ -194,11 +204,15 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                     }, onSwipeIntermediateLeft = {
                         showLeftSwipe.value = true
                         showRightSwipe.value = false
-                        LoggerUtils.logMessage("Mid Left")
+                        //LoggerUtils.logMessage("Mid Left")
                     }, onSwipeIntermediateRight = {
-                        LoggerUtils.logMessage("Mid Right")
+                        //LoggerUtils.logMessage("Mid Right")
                         showLeftSwipe.value = false
                         showRightSwipe.value = true
+                    }, onSwipeCancelled = {
+                        LoggerUtils.logMessage("Set Back")
+                        showLeftSwipe.value = false
+                        showRightSwipe.value = false
                     }) {
                         ProfileSelector(matchProfile, showLeftSwipe, showRightSwipe)
 
@@ -215,6 +229,7 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                                     scope.launch {
                                         //Reject functionality
                                         //mMainViewModel.onDisLike(matchProfile)
+                                        mMainViewModel.onSwiped(matchProfile.userId)
                                         showLeftSwipe.value = true
                                     }
                                 })
@@ -227,6 +242,7 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                                     scope.launch {
                                         //Accept functionality
                                         // mMainViewModel.onLike(matchProfile)
+                                        mMainViewModel.onSwiped(matchProfile.userId)
                                         showRightSwipe.value = true
                                     }
                                 })
@@ -275,7 +291,31 @@ fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>
                                 alpha = 0.3f
                             ) else Color.White.copy(alpha = 0.0f)
                         )
-                ) {}
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                    ) {
+                        if (showRightSwipe.value) {
+                            Image(
+                                modifier = Modifier.size(72.dp, 72.dp),
+                                painter = painterResource(id = R.drawable.baseline_done),
+                                contentDescription = "Reject"
+                            )
+                        }
+
+                        if (showLeftSwipe.value) {
+                            Image(
+                                modifier = Modifier.size(72.dp, 72.dp),
+                                painter = painterResource(id = R.drawable.baseline_cancel),
+                                contentDescription = "Reject"
+                            )
+                        }
+                    }
+                }
             }
 
             Text(
