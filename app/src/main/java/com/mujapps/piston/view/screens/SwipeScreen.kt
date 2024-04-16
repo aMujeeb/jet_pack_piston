@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,109 +48,8 @@ import com.mujapps.piston.view.components.BottomNavigationMenu
 import com.mujapps.piston.view.components.CommonProgressSpinner
 import com.mujapps.piston.view.components.Direction
 import com.mujapps.piston.view.components.SwipeCard
-import com.mujapps.piston.view.components.rememberSwipeableCardState
 import com.mujapps.piston.view.main.MainViewModel
 import kotlinx.coroutines.launch
-
-/*@Composable
-fun SwipeCards() {
-    //TransparentSystemBars()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xfff68084),
-                        Color(0xffa6c0fe),
-                    )
-                )
-            )
-        //                        .systemBarsPadding()
-    ) {
-        Box {
-            val states = profiles.reversed()
-                .map { it to rememberSwipeableCardState() }
-
-            var hint by remember {
-                mutableStateOf("Swipe a card or press a button below")
-            }
-
-            Hint(hint)
-
-            val scope = rememberCoroutineScope()
-            Box(
-                Modifier
-                    .padding(24.dp)
-                    .fillMaxSize()
-                    .aspectRatio(1f)
-                    .align(Alignment.Center)
-            ) {
-                states.forEach { (matchProfile, state) ->
-                    if (state.swipedDirection == null) {
-                        ProfileCard(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .swipableCard(
-                                    state = state,
-                                    blockedDirections = listOf(Down),
-                                    onSwiped = {
-                                        // swipes are handled by the LaunchedEffect
-                                        // so that we track button clicks & swipes
-                                        // from the same place
-                                    },
-                                    onSwipeCancel = {
-                                        //Log.d("Swipeable-Card", "Cancelled swipe")
-                                        hint = "You canceled the swipe"
-                                    }
-                                ),
-                            matchProfile = matchProfile
-                        )
-                    }
-                    LaunchedEffect(matchProfile, state.swipedDirection) {
-                        if (state.swipedDirection != null) {
-                            hint = "You swiped ${state.swipedDirection!!}"
-                        }
-                    }
-                }
-            }
-            Row(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 24.dp, vertical = 32.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CircleButton(
-                    onClick = {
-                        scope.launch {
-                            val last = states.reversed()
-                                .firstOrNull {
-                                    it.second.offset.value == Offset(0f, 0f)
-                                }?.second
-                            last?.swipe(Left)
-                        }
-                    },
-                    icon = Icons.Rounded.Close
-                )
-                CircleButton(
-                    onClick = {
-                        scope.launch {
-                            val last = states.reversed()
-                                .firstOrNull {
-                                    it.second.offset.value == Offset(0f, 0f)
-                                }?.second
-
-                            last?.swipe(Right)
-                        }
-                    },
-                    icon = Icons.Rounded.Favorite
-                )
-            }
-        }
-    }
-}*/
-
 
 @Composable
 private fun ProfileCard(
@@ -233,16 +131,33 @@ fun Scrim(modifier: Modifier = Modifier) {
     )
 }
 
+
 @Composable
 fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hiltViewModel()) {
 
     val inProgressState by mMainViewModel.mInProgressProfiles.collectAsStateWithLifecycle()
+
+    val showLeftSwipe = rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val showRightSwipe = rememberSaveable {
+        mutableStateOf(false)
+    }
+
     if (inProgressState) {
         Box(modifier = Modifier.fillMaxSize(), Alignment.Center) {
             CommonProgressSpinner()
         }
     } else {
         val profiles = mMainViewModel.mMatchProfilesState.collectAsStateWithLifecycle().value
+
+        val mMatchSwipeScreenState = mMainViewModel.mMatchSwipeScreenState.collectAsStateWithLifecycle().value
+
+        if(mMatchSwipeScreenState?.resetUI == true) {
+            showLeftSwipe.value = false
+            showRightSwipe.value = false
+        }
 
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
@@ -252,16 +167,8 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
         ) {
             //Spacer
             Spacer(modifier = Modifier.height(4.dp))
+
             //Cards
-            //val states = profiles.map { it to rememberSwipeableCardState() }
-
-            val showLeftSwipe = rememberSaveable {
-                mutableStateOf(false)
-            }
-
-            val showRightSwipe = rememberSaveable {
-                mutableStateOf(false)
-            }
 
             Box(
                 modifier = Modifier
@@ -276,46 +183,53 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                     Text(text = "No Profiles Available")
                 }
 
-                profiles?.forEach { matchProfile ->
+                mMatchSwipeScreenState?.mData?.forEach { matchProfile ->
 
                     SwipeCard(onSwipeLeft = {
                         //Dislike Functionality
-                        LoggerUtils.logMessage("To Left Most")
                         mMainViewModel.onSwiped(matchProfile.userId)
                     }, onSwipeRight = {
                         //like Functionality
-                        LoggerUtils.logMessage("To Right Most")
                         mMainViewModel.onSwiped(matchProfile.userId)
                     }, onSwipeIntermediateLeft = {
                         showLeftSwipe.value = true
                         showRightSwipe.value = false
+                        LoggerUtils.logMessage("Mid Left")
                     }, onSwipeIntermediateRight = {
-                        showRightSwipe.value = true
+                        LoggerUtils.logMessage("Mid Right")
                         showLeftSwipe.value = false
+                        showRightSwipe.value = true
                     }) {
                         ProfileSelector(matchProfile, showLeftSwipe, showRightSwipe)
+
                         val scope = rememberCoroutineScope()
                         Row(
                             modifier = Modifier
                                 .padding(24.dp)
                                 .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Image(painter = painterResource(id = R.drawable.baseline_cancel), contentDescription = "Reject", modifier = Modifier.clickable {
-                                scope.launch {
-                                    //Reject functionality
-                                    //mMainViewModel.onDisLike(matchProfile)
-                                    showLeftSwipe.value = true
-                                }
-                            })
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_cancel),
+                                contentDescription = "Reject",
+                                modifier = Modifier.clickable {
+                                    scope.launch {
+                                        //Reject functionality
+                                        //mMainViewModel.onDisLike(matchProfile)
+                                        showLeftSwipe.value = true
+                                    }
+                                })
 
 
-                            Image(painter = painterResource(id = R.drawable.baseline_done), contentDescription = "Reject", modifier = Modifier.clickable {
-                                scope.launch {
-                                    //Accept functionality
-                                    // mMainViewModel.onLike(matchProfile)
-                                    showRightSwipe.value = true
-                                }
-                            })
+                            Image(
+                                painter = painterResource(id = R.drawable.baseline_done),
+                                contentDescription = "Reject",
+                                modifier = Modifier.clickable {
+                                    scope.launch {
+                                        //Accept functionality
+                                        // mMainViewModel.onLike(matchProfile)
+                                        showRightSwipe.value = true
+                                    }
+                                })
                         }
                     }
                 }
@@ -325,43 +239,6 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
             BottomNavigationMenu(selectedItem = BottomNavigationItem.SWIPE, navController = navController)
         }
     }
-    /*Column(
-        verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xfff68084), Color(0xffa6c0fe))))
-    ) {
-        //profiles.forEach {
-
-        val showLeftSwipe = rememberSaveable {
-            mutableStateOf(false)
-        }
-
-        val showRightSwipe = rememberSaveable {
-            mutableStateOf(false)
-        }
-
-        SwipeCard(onSwipeLeft = {
-            //Dislike Functionality
-            LoggerUtils.logMessage("To Left Most")
-        }, onSwipeRight = {
-            //like Functionality
-            LoggerUtils.logMessage("To Right Most")
-        }, onSwipeIntermediateLeft = {
-            LoggerUtils.logMessage("To Left")
-            showLeftSwipe.value = true
-            showRightSwipe.value = false
-        }, onSwipeIntermediateRight = {
-            LoggerUtils.logMessage("To Right")
-            showRightSwipe.value = true
-            showLeftSwipe.value = false
-        }) {
-            //ProfileSelector(it.name, it.drawableResId, showLeftSwipe, showRightSwipe)
-            ProfileSelector(profiles[0].name, profiles[0].drawableResId, showLeftSwipe, showRightSwipe)
-        }
-        //}
-        BottomNavigationMenu(selectedItem = BottomNavigationItem.SWIPE, navController = navController)
-    }*/
 }
 
 @Composable
@@ -372,18 +249,35 @@ fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>
             defaultElevation = 10.dp
         )
     ) {
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top) {
-            AsyncImage(
-                model = matchProfile.imageUrl,
-                contentDescription = matchProfile.userName,
-                Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(.8f),
-                alignment = Alignment.Center,
-                contentScale = ContentScale.Crop,
-                clipToBounds = true,
-                error = painterResource(id = R.drawable.baseline_downloading)
-            )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Top,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box {
+                AsyncImage(
+                    model = matchProfile.imageUrl,
+                    contentDescription = matchProfile.userName,
+                    Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(.8f),
+                    alignment = Alignment.Center,
+                    contentScale = ContentScale.Crop,
+                    clipToBounds = true,
+                    error = painterResource(id = R.drawable.baseline_downloading)
+                )
+
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(.8f)
+                        .background(
+                            color = if (showLeftSwipe.value) Color.Red.copy(alpha = 0.3f) else if (showRightSwipe.value) Color.Green.copy(
+                                alpha = 0.3f
+                            ) else Color.White.copy(alpha = 0.0f)
+                        )
+                ) {}
+            }
+
             Text(
                 text = matchProfile.name ?: matchProfile.userName ?: "",
                 style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -393,12 +287,6 @@ fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>
                 style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
                 modifier = Modifier.padding(16.dp)
             )
-           /* if (showLeftSwipe.value) {
-                Text(text = "Cat Left", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            }
-            if (showRightSwipe.value) {
-                Text(text = "Cat Right", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            }*/
         }
     }
 }

@@ -20,6 +20,7 @@ import com.mujapps.piston.utils.LoggerUtils
 import com.mujapps.piston.view.screens.Gender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.UUID
 import javax.inject.Inject
 
@@ -42,10 +43,11 @@ class MainViewModel @Inject constructor(
     private var _userDataState = MutableStateFlow<UserData?>(UserData())
     val mUserDataState: MutableStateFlow<UserData?> = _userDataState
 
-    //val mMatchProfiles = mutableStateOf<List<UserData>>(listOf())
-
     private val _matchProfilesState = MutableStateFlow<ArrayList<UserData>?>(arrayListOf())
-    val mMatchProfilesState : MutableStateFlow<ArrayList<UserData>?> = _matchProfilesState
+    val mMatchProfilesState: MutableStateFlow<ArrayList<UserData>?> = _matchProfilesState
+
+    private val _matchSwipeScreenState = MutableStateFlow<SwipeScreen?>(SwipeScreen())
+    val mMatchSwipeScreenState: MutableStateFlow<SwipeScreen?> = _matchSwipeScreenState
 
     private var _inProgressProfiles = MutableStateFlow(false)
     val mInProgressProfiles: MutableStateFlow<Boolean> = _inProgressProfiles
@@ -263,6 +265,9 @@ class MainViewModel @Inject constructor(
                 }
 
                 _matchProfilesState.value = ArrayList(potentials)
+                _matchSwipeScreenState.update {
+                    it?.copy(mData = ArrayList(potentials), resetUI = true, totalCount = potentials.size, nowCount = 1)
+                }
                 _inProgressProfiles.value = false
             }
         }
@@ -311,15 +316,26 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun onSwiped(profId : String?) {
+    fun onSwiped(profId: String?) {
         LoggerUtils.logMessage("Potential Swipe")
         val profiles = _matchProfilesState.value
-        if(profiles.isNullOrEmpty().not() && profId.isNullOrEmpty().not()) {
+        if (profiles.isNullOrEmpty().not() && profId.isNullOrEmpty().not()) {
             LoggerUtils.logMessage("Potential Remove If")
-            val  temp = profiles?.filter {
+            val temp = profiles?.filter {
                 it.userId != profId
             }
-            _matchProfilesState.value = ArrayList(temp)
+            _matchProfilesState.value = temp?.let { ArrayList(it) }
+
+            _matchSwipeScreenState.update {
+                it?.copy(mData = temp?.let { it1 -> ArrayList(it1) } ?: arrayListOf(), resetUI = true, nowCount = it.nowCount++)
+            }
         }
     }
+
+    data class SwipeScreen(
+        var mData: ArrayList<UserData> = arrayListOf(),
+        var resetUI: Boolean = true,
+        val totalCount: Int = 0,
+        var nowCount: Int = 0,
+    )
 }

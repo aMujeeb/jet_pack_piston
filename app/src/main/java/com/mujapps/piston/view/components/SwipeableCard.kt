@@ -47,7 +47,7 @@ fun SwipeCard(
     onSwipeRight: () -> Unit = {},
     onSwipeIntermediateLeft: () -> Unit = {},
     onSwipeIntermediateRight: () -> Unit = {},
-    swipeThreshold: Float = 240f,
+    swipeThreshold: Float = 320f,
     sensitivityFactor: Float = 2f,
     content: @Composable () -> Unit
 ) {
@@ -63,7 +63,7 @@ fun SwipeCard(
 
     LaunchedEffect(dismissRight) {
         if (dismissRight) {
-            delay(500)
+            delay(200)
             onSwipeRight.invoke()
             dismissRight = false
         }
@@ -71,7 +71,7 @@ fun SwipeCard(
 
     LaunchedEffect(dismissLeft) {
         if (dismissLeft) {
-            delay(500)
+            delay(200)
             onSwipeLeft.invoke()
             dismissLeft = false
         }
@@ -79,7 +79,7 @@ fun SwipeCard(
 
     LaunchedEffect(dismissIntermediateRight) {
         if (dismissIntermediateRight) {
-            delay(500)
+            delay(50)
             onSwipeIntermediateRight.invoke()
             dismissIntermediateRight = false
         }
@@ -87,7 +87,7 @@ fun SwipeCard(
 
     LaunchedEffect(dismissIntermediateLeft) {
         if (dismissIntermediateLeft) {
-            delay(500)
+            delay(50)
             onSwipeIntermediateLeft.invoke()
             dismissIntermediateLeft = false
         }
@@ -113,11 +113,11 @@ fun SwipeCard(
                     }
 
                     //Intermediate Scenarios**********
-                    offset > (swipeThreshold - 120) -> {
+                    offset > (swipeThreshold - 200) -> {
                         dismissIntermediateRight = true
                     }
 
-                    offset < (-swipeThreshold + 120) -> {
+                    offset < (-swipeThreshold + 200) -> {
                         dismissIntermediateLeft = true
                     }
 
