@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -193,7 +192,7 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                     Text(text = "No Profiles Available", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp))
                 }
 
-                mMatchSwipeScreenState?.mData?.forEach { matchProfile ->
+                mMatchSwipeScreenState?.mData?.forEachIndexed { index, matchProfile ->
 
                     SwipeCard(onSwipeLeft = {
                         //Dislike Functionality
@@ -203,18 +202,18 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
                         mMainViewModel.onSwiped(matchProfile.userId)
                     }, onSwipeIntermediateLeft = {
                         showLeftSwipe.value = true
-                        showRightSwipe.value = false
+                        //showRightSwipe.value = false
                         //LoggerUtils.logMessage("Mid Left")
                     }, onSwipeIntermediateRight = {
                         //LoggerUtils.logMessage("Mid Right")
-                        showLeftSwipe.value = false
+                        //showLeftSwipe.value = false
                         showRightSwipe.value = true
                     }, onSwipeCancelled = {
                         LoggerUtils.logMessage("Set Back")
                         showLeftSwipe.value = false
                         showRightSwipe.value = false
                     }) {
-                        ProfileSelector(matchProfile, showLeftSwipe, showRightSwipe)
+                        ProfileSelector(matchProfile, showLeftSwipe, showRightSwipe, ((index == mMatchSwipeScreenState.mData.size.minus(1))))
 
                         val scope = rememberCoroutineScope()
                         Row(
@@ -258,7 +257,7 @@ fun SwipeScreen(navController: NavController, mMainViewModel: MainViewModel = hi
 }
 
 @Composable
-fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>, showRightSwipe: MutableState<Boolean>) {
+fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>, showRightSwipe: MutableState<Boolean>, isTopMost: Boolean) {
     Card(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(
@@ -281,15 +280,19 @@ fun ProfileSelector(matchProfile: UserData, showLeftSwipe: MutableState<Boolean>
                     clipToBounds = true,
                     error = painterResource(id = R.drawable.baseline_downloading)
                 )
-
+                //LoggerUtils.logMessage("Index $index : ${matchProfile.name}")
                 Box(
                     Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(.8f)
                         .background(
-                            color = if (showLeftSwipe.value) Color.Red.copy(alpha = 0.3f) else if (showRightSwipe.value) Color.Green.copy(
-                                alpha = 0.3f
-                            ) else Color.White.copy(alpha = 0.0f)
+                            color = if (isTopMost) {
+                                if (showLeftSwipe.value) Color.Red.copy(alpha = 0.3f) else if (showRightSwipe.value) Color.Green.copy(
+                                    alpha = 0.3f
+                                ) else Color.White.copy(alpha = 0.0f)
+                            } else {
+                                Color.White.copy(alpha = 0.0f)
+                            }
                         )
                 ) {
                     Column(
